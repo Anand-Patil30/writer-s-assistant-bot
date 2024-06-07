@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Writer's Assistant</title>
+{% load static %}
+<link rel="stylesheet" type="text/css" href="{% static 'css/style.css' %}">
+<style>
+    body {
+        font-family: Arial, sans-serif;
+    }
+    .container {
+        display: flex;
+        justify-content: space-between;
+    }
+    .form-section {
+        margin: 20px;
+        flex: 1;
+    }
+    .generated-text {
+        margin-top: 20px;
+    }
+</style>
+</head>
+<body>
+
+<div class="container">
+    <div class="form-section">
+        <h2>Generate Story Idea</h2>
+        <form id="storyIdeaForm">
+            <label for="genre">Genre:</label><br>
+            <input type="text" id="genre" name="genre"><br>
+            <label for="themes">Themes:</label><br>
+            <input type="text" id="themes" name="themes"><br>
+            <label for="keywords">Keywords:</label><br>
+            <input type="text" id="keywords" name="keywords"><br><br>
+            <button type="button" onclick="generateStoryIdea()">Generate</button>
+        </form>
+    </div>
+    
+    <div class="form-section">
+        <h2>Generate Creative Text</h2>
+        <form id="creativeTextForm">
+            <label for="formatType">Format Type:</label><br>
+            <input type="text" id="formatType" name="formatType"><br>
+            <label for="subject">Subject:</label><br>
+            <input type="text" id="subject" name="subject"><br><br>
+            <button type="button" onclick="generateCreativeText()">Generate</button>
+        </form>
+    </div>
+    
+    <div class="form-section">
+        <h2>Continue Story</h2>
+        <form id="continueStoryForm">
+            <label for="existingText">Existing Text:</label><br>
+            <textarea id="existingText" name="existingText" rows="4" cols="50"></textarea><br><br>
+            <button type="button" onclick="continueStory()">Continue</button>
+        </form>
+    </div>
+    
+    <div class="form-section">
+        <h2>Modify Latest Result</h2>
+        <form id="modifyResultForm">
+            <label for="modificationType">Modification Type:</label><br>
+            <select id="modificationType" name="modificationType">
+                <option value="storyIdea">Story Idea</option>
+                <option value="creativeText">Creative Text</option>
+                <option value="story_continuation">Continue Story</option>
+            </select><br>
+            <label for="modificationInstructions">Modification Instructions:</label><br>
+            <textarea id="modificationInstructions" name="modificationInstructions" rows="4" cols="50"></textarea><br><br>
+            <button type="button" onclick="modifyResult()">Modify</button>
+        </form>
+    </div>
+</div>
+
+    <div class="conversation-history">
+        <h2>Last Five Conversations</h2>
+        <ul id="conversationList">
+            <!-- Conversation messages will be displayed here -->
+        </ul>
+    </div>
+
+
+
+<div class="generated-text" id="generatedText">
+    <h2>Generated Output</h2>Result :
+    <div id="storyIdeaOutput"></div>____________________________________________________
+    <div id="creativeTextOutput"></div>____________________________________________________
+    <div id="continuedStoryOutput"></div>____________________________________________________
+    <div id="modifiedResultOutput"></div>____________________________________________________
+</div>
+
+<script>
+    async function generateStoryIdea() {
+        const genre = document.getElementById('genre').value;
+        const themes = document.getElementById('themes').value;
+        const keywords = document.getElementById('keywords').value;
+
+        const response = await fetch('/story_idea/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCsrfToken()
+            },
+            body: JSON.stringify({ genre, themes, keywords })
+        });
+
+        const data = await response.json();
+        document.getElementById('storyIdeaOutput').innerText = data.idea;
+    }
+
+    async function generateCreativeText() {
+        const format_type = document.getElementById('formatType').value;
+        const subject = document.getElementById('subject').value;
+
+        const response = await fetch('/creative_text/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCsrfToken()
+            },
+            body: JSON.stringify({ format_type, subject })
+        });
+
+        const data = await response.json();
+        document.getElementById('creativeTextOutput').innerText = data.text;
+    }
+
+    async function continueStory() {
+        const existing_text = document.getElementById('existingText').value;
+
+        const response = await fetch('/continue_story/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCsrfToken()
+            },
+            body: JSON.stringify({ existing_text })
+        });
+
+        const data = await response.json();
+        document.getElementById('continuedStoryOutput').innerText = data.continuation;
+    }
+
+    async function modifyResult() {
+    const modificationType = document.getElementById('modificationType').value;
+    const modificationInstructions = document.getElementById('modificationInstructions').value;
+
+    const requestData = { 
+        modification_type: modificationType, 
+        modification_instructions: modificationInstructions 
+    };
+    
+    console.log('Sending request:', requestData);
+
+    const response = await fetch('/modify_latest/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken()
+        },
+        body: JSON.stringify(requestData)
+    });
+
+    const data = await response.json();
+    console.log('Received response:', data);
+
+    if (response.ok) {
+        document.getElementById('modifiedResultOutput').innerText = data.modified_content;
+    } else {
+        document.getElementById('modifiedResultOutput').innerText = `Error: ${data.error}`;
+    }
+}
+
+function updateConversationHistory(messages) {
+        const conversationList = document.getElementById('conversationList');
+        conversationList.innerHTML = '';
+
+        messages.slice(-5).forEach(message => {
+            const listItem = document.createElement('li');
+            listItem.textContent = message.content;
+            conversationList.appendChild(listItem);
+        });
+    }
+
+    // Call updateConversationHistory function to display last five conversations
+    updateConversationHistory(messages); 
+
+
+    function getCsrfToken() {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.startsWith('csrftoken=')) {
+                return cookie.substring('csrftoken='.length, cookie.length);
+            }
+        }
+        return '';
+    }
+</script>
+</body>
+</html>
