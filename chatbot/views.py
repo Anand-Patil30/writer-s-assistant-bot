@@ -6,7 +6,6 @@ import json
 from .utils import Chat_histroy
 from django.core.cache import cache
 
-openai.api_key="sk-proj-40YYpoHXyGcTHYWgSkqbT3BlbkFJ9ziwQXFcD8APequJzn6L"
 
 def index(request):
     return render(request, 'index.html')
