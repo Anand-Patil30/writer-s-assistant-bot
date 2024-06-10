@@ -21,20 +21,33 @@
     .generated-text {
         margin-top: 20px;
     }
+    .conversation-history {
+        margin: 20px;
+        flex: 1;
+    }
 </style>
 </head>
 <body>
 
 <div class="container">
     <div class="form-section">
-        <h2>Generate Story Idea</h2>
+        <h2>Generate Story</h2>
         <form id="storyIdeaForm">
             <label for="genre">Genre:</label><br>
             <input type="text" id="genre" name="genre"><br>
             <label for="themes">Themes:</label><br>
             <input type="text" id="themes" name="themes"><br>
+            <label for="themes">Style:</label><br>
+            <select id="style" name="style">
+                <option value="Informative">Informative</option>
+                <option value="motivational">motivational</option>
+                <option value="political">Political</option>
+                <option value="political">authoritative</option>
+            </select>
             <label for="keywords">Keywords:</label><br>
             <input type="text" id="keywords" name="keywords"><br><br>
+            <label for="instruction1">Instructions:</label><br>
+            <input type="text" id="instruction1" name="instruction1"><br><br>
             <button type="button" onclick="generateStoryIdea()">Generate</button>
         </form>
     </div>
@@ -46,6 +59,15 @@
             <input type="text" id="formatType" name="formatType"><br>
             <label for="subject">Subject:</label><br>
             <input type="text" id="subject" name="subject"><br><br>
+            <label for="instruction2">Instructions:</label><br>
+            <input type="text" id="instruction2" name="instruction2"><br><br>
+            <label for="themes">Style:</label><br>
+            <select id="style" name="style">
+                <option value="Informative">Informative</option>
+                <option value="motivational">motivational</option>
+                <option value="political">Political</option>
+                <option value="political">authoritative</option>
+            </select>
             <button type="button" onclick="generateCreativeText()">Generate</button>
         </form>
     </div>
@@ -55,6 +77,8 @@
         <form id="continueStoryForm">
             <label for="existingText">Existing Text:</label><br>
             <textarea id="existingText" name="existingText" rows="4" cols="50"></textarea><br><br>
+            <label for="instruction3">Instructions:</label><br>
+            <input type="text" id="instruction3" name="instruction3"><br><br>
             <button type="button" onclick="continueStory()">Continue</button>
         </form>
     </div>
@@ -75,21 +99,19 @@
     </div>
 </div>
 
-    <div class="conversation-history">
-        <h2>Last Five Conversations</h2>
-        <ul id="conversationList">
-            <!-- Conversation messages will be displayed here -->
-        </ul>
-    </div>
-
-
+<!-- <div class="conversation-history">
+    <h2>Last Five Conversations</h2>
+    <ul id="conversationList">
+         Conversation messages will be displayed here -->
+    <!-- </ul>
+</div> -->
 
 <div class="generated-text" id="generatedText">
-    <h2>Generated Output</h2>Result :
-    <div id="storyIdeaOutput"></div>____________________________________________________
-    <div id="creativeTextOutput"></div>____________________________________________________
-    <div id="continuedStoryOutput"></div>____________________________________________________
-    <div id="modifiedResultOutput"></div>____________________________________________________
+    <h2>Generated Output</h2>
+    <div id="storyIdeaOutput"></div>
+    <div id="creativeTextOutput"></div>
+    <div id="continuedStoryOutput"></div>
+    <div id="modifiedResultOutput"></div>
 </div>
 
 <script>
@@ -97,6 +119,8 @@
         const genre = document.getElementById('genre').value;
         const themes = document.getElementById('themes').value;
         const keywords = document.getElementById('keywords').value;
+        const instructions = document.getElementById('instruction1').value;
+        const style = document.getElementById('style').value;
 
         const response = await fetch('/story_idea/', {
             method: 'POST',
@@ -104,16 +128,19 @@
                 'Content-Type': 'application/json',
                 'X-CSRFToken': getCsrfToken()
             },
-            body: JSON.stringify({ genre, themes, keywords })
+            body: JSON.stringify({ genre, themes, keywords, instructions ,style})
         });
 
         const data = await response.json();
         document.getElementById('storyIdeaOutput').innerText = data.idea;
+        addMessageToHistory(data.idea);
     }
 
     async function generateCreativeText() {
-        const format_type = document.getElementById('formatType').value;
+        const formatType = document.getElementById('formatType').value;
         const subject = document.getElementById('subject').value;
+        const instructions = document.getElementById('instruction2').value;
+        const style = document.getElementById('style').value;
 
         const response = await fetch('/creative_text/', {
             method: 'POST',
@@ -121,15 +148,17 @@
                 'Content-Type': 'application/json',
                 'X-CSRFToken': getCsrfToken()
             },
-            body: JSON.stringify({ format_type, subject })
+            body: JSON.stringify({ formatType, subject, instructions ,style})
         });
 
         const data = await response.json();
         document.getElementById('creativeTextOutput').innerText = data.text;
+        addMessageToHistory(data.text);
     }
 
     async function continueStory() {
-        const existing_text = document.getElementById('existingText').value;
+        const existingText = document.getElementById('existingText').value;
+        const instructions = document.getElementById('instruction3').value;
 
         const response = await fetch('/continue_story/', {
             method: 'POST',
@@ -137,44 +166,47 @@
                 'Content-Type': 'application/json',
                 'X-CSRFToken': getCsrfToken()
             },
-            body: JSON.stringify({ existing_text })
+            body: JSON.stringify({ existingText, instructions })
         });
 
         const data = await response.json();
         document.getElementById('continuedStoryOutput').innerText = data.continuation;
+        addMessageToHistory(data.continuation);
     }
 
     async function modifyResult() {
-    const modificationType = document.getElementById('modificationType').value;
-    const modificationInstructions = document.getElementById('modificationInstructions').value;
+        const modificationType = document.getElementById('modificationType').value;
+        const modificationInstructions = document.getElementById('modificationInstructions').value;
 
-    const requestData = { 
-        modification_type: modificationType, 
-        modification_instructions: modificationInstructions 
-    };
-    
-    console.log('Sending request:', requestData);
+        const requestData = { 
+            modification_type: modificationType, 
+            modification_instructions: modificationInstructions 
+        };
+        
+        const response = await fetch('/modify_latest/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCsrfToken()
+            },
+            body: JSON.stringify(requestData)
+        });
 
-    const response = await fetch('/modify_latest/', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': getCsrfToken()
-        },
-        body: JSON.stringify(requestData)
-    });
-
-    const data = await response.json();
-    console.log('Received response:', data);
-
-    if (response.ok) {
-        document.getElementById('modifiedResultOutput').innerText = data.modified_content;
-    } else {
-        document.getElementById('modifiedResultOutput').innerText = `Error: ${data.error}`;
+        const data = await response.json();
+        if (response.ok) {
+            document.getElementById('modifiedResultOutput').innerText = data.modified_content;
+            addMessageToHistory(data.modified_content);
+        } else {
+            document.getElementById('modifiedResultOutput').innerText = `Error: ${data.error}`;
+        }
     }
-}
 
-function updateConversationHistory(messages) {
+    function addMessageToHistory(message) {
+        chatHistory.add_message({ content: message });
+        updateConversationHistory(chatHistory.get_messages());
+    }
+
+    function updateConversationHistory(messages) {
         const conversationList = document.getElementById('conversationList');
         conversationList.innerHTML = '';
 
@@ -184,10 +216,6 @@ function updateConversationHistory(messages) {
             conversationList.appendChild(listItem);
         });
     }
-
-    // Call updateConversationHistory function to display last five conversations
-    updateConversationHistory(messages); 
-
 
     function getCsrfToken() {
         const cookies = document.cookie.split(';');

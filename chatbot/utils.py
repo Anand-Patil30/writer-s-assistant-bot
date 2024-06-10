@@ -9,4 +9,5 @@ class Chat_histroy:
         self.conversations.append(message)
 
     def get_messages(self):
+        print(self.conversations)
         return self.conversations
