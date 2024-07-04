@@ -7,6 +7,7 @@ from .utils import Chat_histroy
 from django.core.cache import cache
 
 
+
 def index(request):
     return render(request, 'index.html')
 
@@ -39,7 +40,6 @@ def continue_story(messages):
 @csrf_exempt
 def story_idea_view(request):
     data = json.loads(request.body)
-    print("data",data)
     user_message = {"role": "user", "content": f"""Generate a story based on the following information: 
                     Instructions: {data['instructions']}
                     Style: {data['style']}
@@ -61,7 +61,6 @@ def story_idea_view(request):
 @csrf_exempt
 def creative_text_view(request):
     data = json.loads(request.body)
-    print(data)
     user_message = {"role": "user", "content": f"based on the instructions {data['instructions']} and style {data['style']} given. Write a {data['formatType']} about {data['subject']}."}
     hist.add_message(user_message)
     
@@ -76,7 +75,7 @@ def creative_text_view(request):
 @csrf_exempt
 def continue_story_view(request):
     data = json.loads(request.body)
-    user_message = {"role": "user", "content": f"based on the instructions {data['instructions']} given Continue the following story: {data['existing_text']}"}
+    user_message = {"role": "user", "content": f"based on the instructions {data['instructions']} given Continue the following story: {data['existingText']}"}
     hist.add_message(user_message)
     
     continuation = continue_story(hist.get_messages())
