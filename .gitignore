@@ -1,0 +1,9 @@
+# Virtualenv directories
+venv/
+env/
+.env/
+
+# Python-specific ignores
+*.py[cod]
+__pycache__/
+*.pyo
