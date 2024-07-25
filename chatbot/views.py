@@ -7,6 +7,7 @@ from .utils import Chat_histroy
 from django.core.cache import cache
 
 
+
 def index(request):
     return render(request, 'index.html')
 
@@ -24,7 +25,7 @@ def generate_creative_text(messages):
     response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
         messages=messages,
-        max_tokens=200
+        max_tokens=800
     )
     return response['choices'][0]['message']['content'].strip()
 
@@ -39,7 +40,14 @@ def continue_story(messages):
 @csrf_exempt
 def story_idea_view(request):
     data = json.loads(request.body)
-    user_message = {"role": "user", "content": f"Generate a short story idea for a {data['genre']} genre with themes of {data['themes']} and keywords {data['keywords']}. keep the story brief"}
+    user_message = {"role": "user", "content": f"""Generate a story based on the following information: 
+                    Instructions: {data['instructions']}
+                    Style: {data['style']}
+                    Genre: {data['genre']}
+                    Themes: {data['themes']}
+                    Keywords: {data['keywords']}
+                    Remember to follow the instructions strictly."""}
+
     hist.add_message(user_message)
     
     idea = generate_story_idea(hist.get_messages())
@@ -53,7 +61,7 @@ def story_idea_view(request):
 @csrf_exempt
 def creative_text_view(request):
     data = json.loads(request.body)
-    user_message = {"role": "user", "content": f"Write a {data['format_type']} about {data['subject']}."}
+    user_message = {"role": "user", "content": f"based on the instructions {data['instructions']} and style {data['style']} given. Write a {data['formatType']} about {data['subject']}."}
     hist.add_message(user_message)
     
     text = generate_creative_text(hist.get_messages())
@@ -67,7 +75,7 @@ def creative_text_view(request):
 @csrf_exempt
 def continue_story_view(request):
     data = json.loads(request.body)
-    user_message = {"role": "user", "content": f"Continue the following story: {data['existing_text']}"}
+    user_message = {"role": "user", "content": f"based on the instructions {data['instructions']} given Continue the following story: {data['existingText']}"}
     hist.add_message(user_message)
     
     continuation = continue_story(hist.get_messages())
