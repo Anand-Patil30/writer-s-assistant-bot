@@ -12,7 +12,6 @@ body {
     display: flex;
     justify-content: space-between;
     flex-wrap: wrap;
-    max-width: 1200px;
     margin: 20px;
     background-color: #fff;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
@@ -71,8 +70,8 @@ body {
     background-color: #fff;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     border-radius: 8px;
-    max-width: 1200px;
-    width: 100%;
+    
+    width: 100% !important;
 }
 
 .generated-text h2 {

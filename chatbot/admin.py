@@ -1,5 +1,4 @@
-# from djangoseo.admin import register_seo_admin
 from django.contrib import admin
-# from chatbot.seo import MyMetadata
+from .models import Conversations
 
-# register_seo_admin(admin.site, MyMetadata)
+admin.site.register(Conversations)

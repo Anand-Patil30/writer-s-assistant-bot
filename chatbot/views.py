@@ -5,9 +5,15 @@ from django.views.decorators.csrf import csrf_exempt
 import json
 from .utils import Chat_histroy
 from django.core.cache import cache
+from django.shortcuts import render, redirect
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
+from .models import Conversations
+
+openai.api_key='sk-proj-G07XvhAum0ElU5oZm7PlT3BlbkFJvvVnJrlG9dOhii0vbT4y'
 
 
-
+@login_required
 def index(request):
     return render(request, 'index.html')
 
@@ -37,60 +43,116 @@ def continue_story(messages):
     )
     return response['choices'][0]['message']['content'].strip()
 
+
+@login_required
 @csrf_exempt
 def story_idea_view(request):
-    data = json.loads(request.body)
-    user_message = {"role": "user", "content": f"""Generate a story based on the following information: 
-                    Instructions: {data['instructions']}
-                    Style: {data['style']}
-                    Genre: {data['genre']}
-                    Themes: {data['themes']}
-                    Keywords: {data['keywords']}
-                    Remember to follow the instructions strictly."""}
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        instructions = data['instructions']
+        style = data['style']
+        genre = data['genre']
+        themes = data['themes']
+        keywords = data['keywords']
+        
+        user_message = {"role": "user", "content": f"""Generate a story based on the following information: 
+                        Instructions: {instructions}
+                        Style: {style}
+                        Genre: {genre}
+                        Themes: {themes}
+                        Keywords: {keywords}
+                        Remember to follow the instructions strictly."""}
 
-    hist.add_message(user_message)
-    
-    idea = generate_story_idea(hist.get_messages())
-    assistant_message = {"role": "assistant", "content": idea}
-    hist.add_message(assistant_message)
+        hist.add_message(user_message)
+        
+        idea = generate_story_idea(hist.get_messages())
+        assistant_message = {"role": "assistant", "content": idea}
+        hist.add_message(assistant_message)
 
-    cache.set('latest_story_idea', idea, timeout=3600)
-    
-    return JsonResponse({"idea": idea})
+        story_idea = Conversations(
+            user=request.user,
+            instructions=instructions,
+            style=style,
+            genre=genre,
+            themes=themes,
+            keywords=keywords,
+            idea=idea
+        )
+        story_idea.save()
 
+        cache.set('latest_story_idea', idea, timeout=3600)
+        
+        return JsonResponse({"idea": idea})
+    else:
+        return JsonResponse({"error": "Invalid request method"}, status=400)
+
+@login_required
+def conversation(request):
+    user_story_ideas = Conversations.objects.filter(user=request.user).values(
+        'instructions', 'style', 'genre', 'themes', 'keywords', 'idea', 'created_at'
+    )
+    return JsonResponse(list(user_story_ideas), safe=False)
+
+
+@login_required
 @csrf_exempt
 def creative_text_view(request):
-    data = json.loads(request.body)
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        instructions = data['instructions']
+        style = data['style']
+        formatType = data['formatType']
+        subject = data['subject']
     user_message = {"role": "user", "content": f"based on the instructions {data['instructions']} and style {data['style']} given. Write a {data['formatType']} about {data['subject']}."}
     hist.add_message(user_message)
     
     text = generate_creative_text(hist.get_messages())
     assistant_message = {"role": "assistant", "content": text}
     hist.add_message(assistant_message)
+    story_idea = Conversations(
+            user=request.user,
+            instructions=instructions,
+            style=style,
+            genre=formatType,
+            themes=subject,
+            idea=text
+        )
+    story_idea.save()
 
-    cache.set('latest_creative_text', text, timeout=3600)
     
     return JsonResponse({"text": text})
 
+
+@login_required
 @csrf_exempt
 def continue_story_view(request):
-    data = json.loads(request.body)
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        instructions = data['instructions']
+        style = data['exstingText']
     user_message = {"role": "user", "content": f"based on the instructions {data['instructions']} given Continue the following story: {data['existingText']}"}
     hist.add_message(user_message)
     
     continuation = continue_story(hist.get_messages())
     assistant_message = {"role": "assistant", "content": continuation}
     hist.add_message(assistant_message)
-
-    cache.set('latest_story_continuation', continuation, timeout=3600)
-    
+    story_idea = Conversations(
+            user=request.user,
+            instructions=instructions,
+            style=style,
+            idea=continuation
+        )
+    story_idea.save()
     return JsonResponse({"continuation": continuation})
 
+
+@login_required
 @csrf_exempt
 def modify_latest_view(request):
-    data = json.loads(request.body)
-    modification_type = data['modification_type']
-    modification_instructions = data['modification_instructions']
+    if request.method=='POST':
+        data = json.loads(request.body)
+        modification_type = data['modification_type']
+        modification_instructions = data['modification_instructions']
 
     if modification_type == 'storyIdea':
         latest_content = cache.get('latest_story_idea')
@@ -114,8 +176,29 @@ def modify_latest_view(request):
     )
     
     modified_content = response['choices'][0]['message']['content'].strip()
-
-    cache.set(f'latest_{modification_type}', modified_content, timeout=3600)
+    story_idea = Conversations(
+            user=request.user,
+            instructions=modification_instructions,
+            style=modification_type,
+            idea=modified_content
+        )
+    story_idea.save()
     
     return JsonResponse({"modified_content": modified_content})
 
+def login_view(request):
+    if request.method == 'POST':
+        username = request.POST['username']
+        password = request.POST['password']
+        user = authenticate(request, username=username, password=password)
+        if user is not None:
+            login(request, user)
+            return redirect('index')
+        else:
+            return JsonResponse({"error": "Invalid credentials"}, status=400)
+    return render(request, 'login.html')
+
+@login_required
+def logout_view(request):
+    logout(request)
+    return redirect('login')

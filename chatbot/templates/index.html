@@ -1,247 +1,296 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Writer's Assistant</title>
-{% load static %}
-<link rel="stylesheet" type="text/css" href="{% static 'css/style.css' %}">
-<style>
-    body {
-        font-family: Arial, sans-serif;
-    }
-    .container {
-        display: flex;
-        justify-content: space-between;
-    }
-    .form-section {
-        margin: 20px;
-        flex: 1;
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-    }
-
-    .form-section1  {
-        margin: 20px;
-        flex: 1;
-        height: 100%;
-    }
-    .generated-text {
-        margin-top: 20px;
-    }
-    .conversation-history {
-        margin: 20px;
-        flex: 1;
-    }
-</style>
-</head>
-<body>
-
-<div class="container">
-    <div class="form-section" style="min-height: 80vh;">
-        <form id="storyIdeaForm">
-            <h2>Generate Story</h2>
-            <label for="genre">Genre:</label><br>
-            <input required type="text" id="genre" name="genre"><br>
-            <label for="themes">Themes:</label><br>
-            <input required type="text" id="themes" name="themes"><br>
-            <label for="keywords">Keywords:</label><br>
-            <input required type="text" id="keywords" name="keywords"><br><br>
-            <label for="instruction1">Instructions:</label><br>
-            <input required type="text" id="instruction1" name="instruction1"><br><br>
-            <label for="style1">Style:</label><br>
-            <select required id="style1" name="style">
-                <option value="" disabled selected>Select value</option>
-                <option value="Informative">Informative</option>
-                <option value="motivational">Motivational</option>
-                <option value="political">Political</option>
-                <option value="authoritative">Authoritative</option>
-            </select>
-        </form>
-        <button id="generateStoryButton" style="width: 100%;" type="button" onclick="generateStoryIdea()" disabled>Generate</button>
-    </div>
-
-    <div class="form-section" style="min-height: 80vh;">
-        <form id="creativeTextForm">
-            <h2>Generate Creative Text</h2>
-            <label for="formatType">Format Type:</label><br>
-            <input required type="text" id="formatType" name="formatType"><br>
-            <label for="subject">Subject:</label><br>
-            <input required type="text" id="subject" name="subject"><br><br>
-            <label for="instruction2">Instructions:</label><br>
-            <input required type="text" id="instruction2" name="instruction2"><br><br>
-            <label for="style2">Style:</label><br>
-            <select required id="style2" name="style">
-                <option value="" disabled selected>Select value</option>
-                <option value="Informative">Informative</option>
-                <option value="motivational">Motivational</option>
-                <option value="political">Political</option>
-                <option value="authoritative">Authoritative</option>
-            </select>
-        </form>
-        <button id="generateCreativeTextButton" style="width: 100%;" type="button" onclick="generateCreativeText()" disabled>Generate</button>
-    </div>
-
-    <div class="form-section" style="min-height: 80vh;">
-        <form id="continueStoryForm">
-            <h2>Continue Story</h2>
-            <label for="existingText">Existing Text:</label><br>
-            <textarea id="existingText" name="existingText" rows="4" cols="50"></textarea><br><br>
-            <label for="instruction3">Instructions:</label><br>
-            <input type="text" id="instruction3" name="instruction3"><br><br>
-        </form>
-        <button type="button" onclick="continueStory()">Continue</button>
-    </div>
-    
-    <div class="form-section">
-        <h2>Modify Latest Result</h2>
-        <form id="modifyResultForm">
-            <label for="modificationType">Modification Type:</label><br>
-            <select id="modificationType" name="modificationType">
-                <option value="storyIdea">Story Idea</option>
-                <option value="creativeText">Creative Text</option>
-                <option value="story_continuation">Continue Story</option>
-            </select><br>
-            <label for="modificationInstructions">Modification Instructions:</label><br>
-            <textarea id="modificationInstructions" name="modificationInstructions" rows="4" cols="50"></textarea><br><br>
-        </form>
-        <button type="button" onclick="modifyResult()">Modify</button>
-    </div>
-</div>
-
-<!-- <div class="conversation-history">
-    <h2>Last Five Conversations</h2>
-    <ul id="conversationList">
-         Conversation messages will be displayed here -->
-    <!-- </ul>
-</div> -->
-
-<div class="generated-text" id="generatedText" style="margin-bottom: 20px;">
-    <h2>Generated Output</h2>
-    <div id="storyIdeaOutput"></div>
-    <div id="creativeTextOutput"></div>
-    <div id="continuedStoryOutput"></div>
-    <div id="modifiedResultOutput"></div>
-</div>
-
-<script>
-    async function generateStoryIdea() {
-        const genre = document.getElementById('genre').value;
-        const themes = document.getElementById('themes').value;
-        const keywords = document.getElementById('keywords').value;
-        const instructions = document.getElementById('instruction1').value;
-        const style = document.getElementById('style1').value;
-
-        const response = await fetch('/story_idea/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': getCsrfToken()
-            },
-            body: JSON.stringify({ genre, themes, keywords, instructions ,style})
-        });
-
-        const data = await response.json();
-        document.getElementById('storyIdeaOutput').innerHTML = `<h3>Story Idea :</h3> ${data.idea}`;
-        addMessageToHistory(data.idea);
-    }
-
-    async function generateCreativeText() {
-        const formatType = document.getElementById('formatType').value;
-        const subject = document.getElementById('subject').value;
-        const instructions = document.getElementById('instruction2').value;
-        const style = document.getElementById('style2').value;
-
-        const response = await fetch('/creative_text/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': getCsrfToken()
-            },
-            body: JSON.stringify({ formatType, subject, instructions ,style})
-        });
-
-        const data = await response.json();
-        document.getElementById('creativeTextOutput').innerHTML = `<h3>Creative Text :</h3> ${data.text}`;
-        addMessageToHistory(data.text);
-    }
-
-    async function continueStory() {
-        const existingText = document.getElementById('existingText').value;
-        const instructions = document.getElementById('instruction3').value;
-
-        const response = await fetch('/continue_story/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': getCsrfToken()
-            },
-            body: JSON.stringify({ existingText, instructions })
-        });
-
-        const data = await response.json();
-        document.getElementById('continuedStoryOutput').innerHTML = `<h3>Continued Story :</h3> ${data.continuation}`;
-        addMessageToHistory(data.continuation);
-    }
-
-    async function modifyResult() {
-        const modificationType = document.getElementById('modificationType').value;
-        const modificationInstructions = document.getElementById('modificationInstructions').value;
-
-        const requestData = { 
-            modification_type: modificationType, 
-            modification_instructions: modificationInstructions 
-        };
-        
-        const response = await fetch('/modify_latest/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': getCsrfToken()
-            },
-            body: JSON.stringify(requestData)
-        });
-
-        const data = await response.json();
-        if (response.ok) {
-            document.getElementById('modifiedResultOutput').innerHTML = `<h3>Modified Result :</h3> ${data.modified_content}`;
-            addMessageToHistory(data.modified_content);
-        } else {
-            document.getElementById('modifiedResultOutput').innerText = `Error: ${data.error}`;
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Writer's Assistant</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        li{
+            text-wrap: wrap;
+            word-break: break-all;
         }
-    }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar -->
+        <div id="sidebar" class="hidden  lg:flex-shrink-0 w-96 bg-gray-800 overflow-y-auto transition-all duration-300">
+            <div class="flex flex-col h-full">
+                <div class="flex items-center justify-between p-4 border-b border-gray-700">
+                    <h2 class="text-xl font-semibold text-white">Conversation History</h2>
+                    <button onclick="toggleSidebar()" class="text-gray-400 hover:text-white lg:hidden ">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                <ul id="conversationList" class="flex-grow p-4 space-y-2 overflow-y-auto">
+                    <!-- Conversation history will be populated here -->
+                </ul>
+            </div>
+        </div>
 
-    function addMessageToHistory(message) {
-        chatHistory.add_message({ content: message });
-        updateConversationHistory(chatHistory.get_messages());
-    }
+        <!-- Main content -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- Navbar -->
+            <nav class="bg-white shadow-md">
+                <div class=" mx-auto px-4 sm:px-6 ">
+                    <div class="flex justify-between h-16">
+                        <div class="flex items-center">
+                            <button onclick="toggleSidebar()" class=" inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500">
+                                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                                </svg>
+                            </button>
+                            <span class="ml-2 text-xl font-bold text-gray-800">Writer's Assistant</span>
+                        </div>
+                        <div class="flex items-center">
+                           
+                            <a href="{% url 'logout' %}" class="ml-4 px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Logout</a>
+                        </div>
+                    </div>
+                </div>
+            </nav>
 
-    function updateConversationHistory(messages) {
-        const conversationList = document.getElementById('conversationList');
-        conversationList.innerHTML = ``;
+            <!-- Page content -->
+            <main class="flex-1 overflow-y-auto p-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- Story Idea Form -->
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <form id="storyIdeaForm">
+                            <h2 class="text-xl font-semibold mb-4">Generate Story</h2>
+                            <div class="mb-4">
+                                <label for="genre" class="block text-sm font-medium text-gray-700">Genre:</label>
+                                <input required type="text" id="genre" name="genre" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                            </div>
+                            <div class="mb-4">
+                                <label for="themes" class="block text-sm font-medium text-gray-700">Themes:</label>
+                                <input required type="text" id="themes" name="themes" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                            </div>
+                            <div class="mb-4">
+                                <label for="keywords" class="block text-sm font-medium text-gray-700">Keywords:</label>
+                                <input required type="text" id="keywords" name="keywords" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                            </div>
+                            <div class="mb-4">
+                                <label for="instruction1" class="block text-sm font-medium text-gray-700">Instructions:</label>
+                                <input required type="text" id="instruction1" name="instruction1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                            </div>
+                            <div class="mb-4">
+                                <label for="style1" class="block text-sm font-medium text-gray-700">Style:</label>
+                                <select required id="style1" name="style" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                                    <option value="" disabled selected>Select value</option>
+                                    <option value="Informative">Informative</option>
+                                    <option value="motivational">Motivational</option>
+                                    <option value="political">Political</option>
+                                    <option value="authoritative">Authoritative</option>
+                                </select>
+                            </div>
+                        </form>
+                        <button id="generateStoryButton" type="button" onclick="generateStoryIdea()" disabled class="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Generate</button>
+                    </div>
 
-        messages.slice(-5).forEach(message => {
-            const listItem = document.createElement('li');
-            listItem.textContent = message.content;
-            conversationList.appendChild(listItem);
-        });
-    }
+                    <!-- Creative Text Form -->
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <form id="creativeTextForm">
+                            <h2 class="text-xl font-semibold mb-4">Generate Creative Text</h2>
+                            <div class="mb-4">
+                                <label for="formatType" class="block text-sm font-medium text-gray-700">Format Type:</label>
+                                <input required type="text" id="formatType" name="formatType" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                            </div>
+                            <div class="mb-4">
+                                <label for="subject" class="block text-sm font-medium text-gray-700">Subject:</label>
+                                <input required type="text" id="subject" name="subject" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                            </div>
+                            <div class="mb-4">
+                                <label for="instruction2" class="block text-sm font-medium text-gray-700">Instructions:</label>
+                                <input required type="text" id="instruction2" name="instruction2" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                            </div>
+                            <div class="mb-4">
+                                <label for="style2" class="block text-sm font-medium text-gray-700">Style:</label>
+                                <select required id="style2" name="style" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                                    <option value="" disabled selected>Select value</option>
+                                    <option value="Informative">Informative</option>
+                                    <option value="motivational">Motivational</option>
+                                    <option value="political">Political</option>
+                                    <option value="authoritative">Authoritative</option>
+                                </select>
+                            </div>
+                        </form>
+                        <button id="generateCreativeTextButton" type="button" onclick="generateCreativeText()" disabled class="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Generate</button>
+                    </div>
 
-    function getCsrfToken() {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.startsWith('csrftoken=')) {
-                return cookie.substring('csrftoken='.length, cookie.length);
+                    <!-- Continue Story Form -->
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <form id="continueStoryForm">
+                            <h2 class="text-xl font-semibold mb-4">Continue Story</h2>
+                            <div class="mb-4">
+                                <label for="existingText" class="block text-sm font-medium text-gray-700">Existing Text:</label>
+                                <textarea id="existingText" name="existingText" rows="4" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"></textarea>
+                            </div>
+                            <div class="mb-4">
+                                <label for="instruction3" class="block text-sm font-medium text-gray-700">Instructions:</label>
+                                <input type="text" id="instruction3" name="instruction3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                            </div>
+                        </form>
+                        <button type="button" onclick="continueStory()" class="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Continue</button>
+                    </div>
+
+                    <!-- Modify Latest Result Form -->
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h2 class="text-xl font-semibold mb-4">Modify Latest Result</h2>
+                        <form id="modifyResultForm">
+                            <div class="mb-4">
+                                <label for="modificationType" class="block text-sm font-medium text-gray-700">Modification Type:</label>
+                                <select id="modificationType" name="modificationType" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                                    <option value="storyIdea">Story Idea</option>
+                                    <option value="creativeText">Creative Text</option>
+                                    <option value="story_continuation">Continue Story</option>
+                                </select>
+                            </div>
+                            <div class="mb-4">
+                                <label for="modificationInstructions" class="block text-sm font-medium text-gray-700">Modification Instructions:</label>
+                                <textarea id="modificationInstructions" name="modificationInstructions" rows="4" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"></textarea>
+                            </div>
+                        </form>
+                        <button type="button" onclick="modifyResult()" class="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Modify</button>
+                    </div>
+                </div>
+
+                <!-- Generated Output -->
+                <div class="mt-8 bg-white p-6 rounded-lg shadow-md">
+                    <h2 class="text-xl font-semibold mb-4">Generated Output</h2>
+                    <div id="storyIdeaOutput" class="mb-4"></div>
+                    <div id="creativeTextOutput" class="mb-4"></div>
+                    <div id="continuedStoryOutput" class="mb-4"></div>
+                    <div id="modifiedResultOutput"></div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        async function generateStoryIdea() {
+            const genre = document.getElementById('genre').value;
+            const themes = document.getElementById('themes').value;
+            const keywords = document.getElementById('keywords').value;
+            const instructions = document.getElementById('instruction1').value;
+            const style = document.getElementById('style1').value;
+
+            const response = await fetch('/story_idea/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfToken()
+                },
+                body: JSON.stringify({ genre, themes, keywords, instructions, style })
+            });
+
+            const data = await response.json();
+            document.getElementById('storyIdeaOutput').innerHTML = `<h3 class="text-lg font-semibold mb-2">Story Idea:</h3><p>${data.idea}</p>`;
+            await updateConversationHistory();
+        }
+
+        async function generateCreativeText() {
+            const formatType = document.getElementById('formatType').value;
+            const subject = document.getElementById('subject').value;
+            const instructions = document.getElementById('instruction2').value;
+            const style = document.getElementById('style2').value;
+
+            const response = await fetch('/creative_text/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfToken()
+                },
+                body: JSON.stringify({ formatType, subject, instructions, style })
+            });
+
+            const data = await response.json();
+            document.getElementById('creativeTextOutput').innerHTML = `<h3 class="text-lg font-semibold mb-2">Creative Text:</h3><p>${data.text}</p>`;
+            await updateConversationHistory();
+        }
+
+        async function continueStory() {
+            const existingText = document.getElementById('existingText').value;
+            const instructions = document.getElementById('instruction3').value;
+
+            const response = await fetch('/continue_story/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfToken()
+                },
+                body: JSON.stringify({ existingText, instructions })
+            });
+
+            const data = await response.json();
+            document.getElementById('continuedStoryOutput').innerHTML = `<h3 class="text-lg font-semibold mb-2">Continued Story:</h3><p>${data.continuation}</p>`;
+            await updateConversationHistory();
+        }
+
+        async function modifyResult() {
+            const modificationType = document.getElementById('modificationType').value;
+            const modificationInstructions = document.getElementById('modificationInstructions').value;
+
+            const response = await fetch('/modify_latest/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfToken()
+                },
+                body: JSON.stringify({ modificationType, modificationInstructions })
+            });
+
+            const data = await response.json();
+            if (response.ok) {
+                document.getElementById('modifiedResultOutput').innerHTML = `<h3 class="text-lg font-semibold mb-2">Modified Result:</h3><p>${data.modified_content}</p>`;
+                await updateConversationHistory();
+            } else {
+                document.getElementById('modifiedResultOutput').innerHTML = `<p class="text-red-500">Error: ${data.error}</p>`;
             }
         }
-        return '';
-    }
-    const storyForm = document.getElementById('storyIdeaForm');
-        const storyButton = document.getElementById('generateStoryButton');
 
+        async function updateConversationHistory() {
+            const response = await fetch('/conversation/', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfToken()
+                }
+            });
+
+            const data = await response.json();
+            const conversationList = document.getElementById('conversationList');
+            conversationList.innerHTML = ''; // Clear the list
+            data.forEach(conversation => {
+                const listItem = document.createElement('li');
+                listItem.textContent = conversation.idea;
+                listItem.className = 'text-white bg-gray-700 p-2 rounded';
+                conversationList.appendChild(listItem);
+            });
+        }
+
+        function getCsrfToken() {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.startsWith('csrftoken=')) {
+                    return cookie.substring('csrftoken='.length, cookie.length);
+                }
+            }
+            return '';
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('hidden');
+           
+        }
+
+        // Validate forms
+        const storyForm = document.getElementById('storyIdeaForm');
+        const storyButton = document.getElementById('generateStoryButton');
         const creativeTextForm = document.getElementById('creativeTextForm');
         const creativeTextButton = document.getElementById('generateCreativeTextButton');
 
@@ -252,10 +301,11 @@
 
         storyForm.addEventListener('input', () => validateForm(storyForm, storyButton));
         storyForm.addEventListener('change', () => validateForm(storyForm, storyButton));
-
         creativeTextForm.addEventListener('input', () => validateForm(creativeTextForm, creativeTextButton));
         creativeTextForm.addEventListener('change', () => validateForm(creativeTextForm, creativeTextButton));
+
+        // Call updateConversationHistory on page load to populate the sidebar
+        document.addEventListener('DOMContentLoaded', updateConversationHistory);
     </script>
-</script>
 </body>
 </html>
