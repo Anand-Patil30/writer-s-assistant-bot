@@ -10,7 +10,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from .models import Conversations
 
-openai.api_key='sk-proj-G07XvhAum0ElU5oZm7PlT3BlbkFJvvVnJrlG9dOhii0vbT4y'
+openai.api_key=''
 
 
 @login_required
