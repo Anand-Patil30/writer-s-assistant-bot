@@ -10,6 +10,8 @@ class Conversations(models.Model):
     themes = models.CharField()
     keywords = models.CharField()
     idea = models.TextField()
+    summary=models.TextField()
+    type=models.CharField()
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

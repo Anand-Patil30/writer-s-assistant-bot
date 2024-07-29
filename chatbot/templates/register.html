@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login</title>
-    {% load static %}
-    <link rel="icon" href="{% static 'chatbot/navlogo.png' %}" type="image/x-icon">
+    <title>Register</title>
     <!-- Bootstrap CSS -->
     <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    {% load static %}
+    <link rel="icon" href="{% static 'chatbot/navlogo.png' %}" type="image/x-icon">
     <style>
         body {
             display: flex;
@@ -16,7 +16,7 @@
             height: 100vh;
             background-color: #f8f9fa;
         }
-        .login-container {
+        .register-container {
             background-color: white;
             padding: 30px;
             border-radius: 8px;
@@ -25,22 +25,15 @@
     </style>
 </head>
 <body>
-    <div class="login-container">
-        <h2 class="text-center">Login</h2>
-        <form method="post" action="{% url 'login' %}">
+    <div class="register-container">
+        <h2 class="text-center">Register</h2>
+        <form method="POST">
             {% csrf_token %}
-            <div class="form-group">
-                <label for="username">Username:</label>
-                <input type="text" class="form-control" id="username" name="username" required>
-            </div>
-            <div class="form-group">
-                <label for="password">Password:</label>
-                <input type="password" class="form-control" id="password" name="password" required>
-            </div>
-            <button type="submit" class="btn btn-primary btn-block">Login</button>
+            {{ form.as_p }}
+            <button type="submit" class="btn btn-primary btn-block">Register</button>
         </form>
         <div class="text-center mt-3">
-            <p>Don't have an account? <a href="{% url 'register' %}" class="btn btn-secondary">Register</a></p>
+            <p>Already have an account? <a href="{% url 'login' %}" class="btn btn-secondary">Login</a></p>
         </div>
     </div>
 

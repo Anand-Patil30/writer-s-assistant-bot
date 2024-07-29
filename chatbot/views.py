@@ -9,8 +9,10 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from .models import Conversations
+from .forms import UserRegistrationForm
+from django.conf import settings
 
-openai.api_key=''
+openai.api_key=settings.OPENAI_API_KEY
 
 
 @login_required
@@ -25,7 +27,18 @@ def generate_story_idea(messages):
         messages=messages,
         max_tokens=700
     )
-    return response['choices'][0]['message']['content'].strip()
+    content = response['choices'][0]['message']['content'].strip()
+
+    if "Summary:" in content:
+        story, summary = content.split("Summary:", 1)
+        story = story.strip()
+        summary = summary.strip()
+    else:
+        story = content
+        summary = "No summary provided."
+    
+    return story, summary
+
 
 def generate_creative_text(messages):
     response = openai.ChatCompletion.create(
@@ -33,7 +46,17 @@ def generate_creative_text(messages):
         messages=messages,
         max_tokens=800
     )
-    return response['choices'][0]['message']['content'].strip()
+    content = response['choices'][0]['message']['content'].strip()
+
+    if "Summary:" in content:
+        story, summary = content.split("Summary:", 1)
+        story = story.strip()
+        summary = summary.strip()
+    else:
+        story = content
+        summary = "No summary provided."
+    
+    return story, summary
 
 def continue_story(messages):
     response = openai.ChatCompletion.create(
@@ -41,7 +64,17 @@ def continue_story(messages):
         messages=messages,
         max_tokens=700
     )
-    return response['choices'][0]['message']['content'].strip()
+    content = response['choices'][0]['message']['content'].strip()
+
+    if "Summary:" in content:
+        story, summary = content.split("Summary:", 1)
+        story = story.strip()
+        summary = summary.strip()
+    else:
+        story = content
+        summary = "No summary provided."
+    
+    return story, summary
 
 
 @login_required
@@ -55,20 +88,21 @@ def story_idea_view(request):
         themes = data['themes']
         keywords = data['keywords']
         
-        user_message = {"role": "user", "content": f"""Generate a story based on the following information: 
-                        Instructions: {instructions}
+        user_message = {"role": "user", "content": f""" You are an Excelent story writer
+                        Generate a story based on the following information and give me
+                        one line summary based on input. Summary is compulsory:
                         Style: {style}
                         Genre: {genre}
                         Themes: {themes}
                         Keywords: {keywords}
+                        Instructions: {instructions}
                         Remember to follow the instructions strictly."""}
-
         hist.add_message(user_message)
         
-        idea = generate_story_idea(hist.get_messages())
-        assistant_message = {"role": "assistant", "content": idea}
+        story, summary = generate_story_idea(hist.get_messages())
+        assistant_message = {"role": "assistant", "content": story}
         hist.add_message(assistant_message)
-
+        content_type='storyIdea'
         story_idea = Conversations(
             user=request.user,
             instructions=instructions,
@@ -76,20 +110,21 @@ def story_idea_view(request):
             genre=genre,
             themes=themes,
             keywords=keywords,
-            idea=idea
+            idea=story,
+            summary=summary,
+            type=content_type,
+
         )
         story_idea.save()
 
-        cache.set('latest_story_idea', idea, timeout=3600)
-        
-        return JsonResponse({"idea": idea})
+        return JsonResponse({"idea": story,"summary":summary})
     else:
         return JsonResponse({"error": "Invalid request method"}, status=400)
 
 @login_required
 def conversation(request):
     user_story_ideas = Conversations.objects.filter(user=request.user).values(
-        'instructions', 'style', 'genre', 'themes', 'keywords', 'idea', 'created_at'
+        'instructions', 'style', 'genre', 'themes', 'keywords', 'idea', 'created_at', 'summary',
     )
     return JsonResponse(list(user_story_ideas), safe=False)
 
@@ -103,11 +138,12 @@ def creative_text_view(request):
         style = data['style']
         formatType = data['formatType']
         subject = data['subject']
-    user_message = {"role": "user", "content": f"based on the instructions {data['instructions']} and style {data['style']} given. Write a {data['formatType']} about {data['subject']}."}
+    user_message = {"role": "user", "content": f"based on the instructions {data['instructions']} and style {data['style']} given. Write a {data['formatType']} about {data['subject']}.and provide one line summary based on input. Summary is compulsory"}
     hist.add_message(user_message)
     
-    text = generate_creative_text(hist.get_messages())
-    assistant_message = {"role": "assistant", "content": text}
+    content_type='creativeText'
+    story, summary = generate_creative_text(hist.get_messages())
+    assistant_message = {"role": "assistant", "content": story}
     hist.add_message(assistant_message)
     story_idea = Conversations(
             user=request.user,
@@ -115,12 +151,14 @@ def creative_text_view(request):
             style=style,
             genre=formatType,
             themes=subject,
-            idea=text
+            idea=story,
+            summary=summary,
+            type=content_type,
+
         )
     story_idea.save()
-
     
-    return JsonResponse({"text": text})
+    return JsonResponse({"text": story,"summary":summary})
 
 
 @login_required
@@ -129,21 +167,25 @@ def continue_story_view(request):
     if request.method == 'POST':
         data = json.loads(request.body)
         instructions = data['instructions']
-        style = data['exstingText']
-    user_message = {"role": "user", "content": f"based on the instructions {data['instructions']} given Continue the following story: {data['existingText']}"}
+        style = data['existingText']
+    user_message = {"role": "user", "content": f"based on the instructions {data['instructions']} given Continue the following story: {data['existingText']} and provide one line summary based on input and generated response. Summary is compulsory"}
     hist.add_message(user_message)
-    
-    continuation = continue_story(hist.get_messages())
-    assistant_message = {"role": "assistant", "content": continuation}
+
+    content_type='story_continuation'
+    story, summary = continue_story(hist.get_messages())
+    assistant_message = {"role": "assistant", "content": story}
     hist.add_message(assistant_message)
     story_idea = Conversations(
             user=request.user,
             instructions=instructions,
             style=style,
-            idea=continuation
+            idea=story,
+            summary=summary,
+            type=content_type,
         )
     story_idea.save()
-    return JsonResponse({"continuation": continuation})
+
+    return JsonResponse({"continuation": story,"summary":summary})
 
 
 @login_required
@@ -151,22 +193,15 @@ def continue_story_view(request):
 def modify_latest_view(request):
     if request.method=='POST':
         data = json.loads(request.body)
-        modification_type = data['modification_type']
-        modification_instructions = data['modification_instructions']
+        modification_type = data['modificationType']
+        modification_instructions = data['modificationInstructions']
 
-    if modification_type == 'storyIdea':
-        latest_content = cache.get('latest_story_idea')
-    elif modification_type == 'creativeText':
-        latest_content = cache.get('latest_creative_text')
-    elif modification_type == 'story_continuation':
-        latest_content = cache.get('latest_story_continuation')
-    else:
-        return JsonResponse({"error": "Invalid modification type."}, status=400)
-
-    if not latest_content:
+    try:
+        latest_content = Conversations.objects.filter(type=modification_type).latest('created_at')
+    except Conversations.DoesNotExist:
         return JsonResponse({"error": "No content found to modify."}, status=400)
     
-    user_message = {"role": "user", "content": f"Modify the following {modification_type}: {latest_content}. Instructions: {modification_instructions}"}
+    user_message = {"role": "user", "content": f"Modify the following {modification_type}: {latest_content}. Instructions: {modification_instructions} and provide one line summary based on inputs.Summary is compulsory"}
     hist.add_message(user_message)
 
     response = openai.ChatCompletion.create(
@@ -175,16 +210,24 @@ def modify_latest_view(request):
         max_tokens=150
     )
     
-    modified_content = response['choices'][0]['message']['content'].strip()
+    content = response['choices'][0]['message']['content'].strip()
+
+    if "Summary:" in content:
+        story, summary = content.split("Summary:", 1)
+        story = story.strip()
+        summary = summary.strip()
+    else:
+        story = content
+        summary = "No summary provided."
     story_idea = Conversations(
             user=request.user,
             instructions=modification_instructions,
             style=modification_type,
-            idea=modified_content
-        )
+            idea=story,
+            summary=summary,        )
     story_idea.save()
     
-    return JsonResponse({"modified_content": modified_content})
+    return JsonResponse({"modified_content": story,"summary":summary})
 
 def login_view(request):
     if request.method == 'POST':
@@ -193,7 +236,7 @@ def login_view(request):
         user = authenticate(request, username=username, password=password)
         if user is not None:
             login(request, user)
-            return redirect('index')
+            return redirect('home')
         else:
             return JsonResponse({"error": "Invalid credentials"}, status=400)
     return render(request, 'login.html')
@@ -202,3 +245,15 @@ def login_view(request):
 def logout_view(request):
     logout(request)
     return redirect('login')
+
+
+def register(request):
+    if request.method == 'POST':
+        form = UserRegistrationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            login(request, user)
+            return redirect('home')
+    else:
+        form = UserRegistrationForm()
+    return render(request, 'register.html', {'form': form})

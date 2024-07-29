@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Writer's Assistant</title>
+    {% load static %}
+    <link rel="icon" href="{% static 'chatbot/navlogo.png' %}" type="image/x-icon">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         li{
@@ -53,7 +56,6 @@
                 </div>
             </nav>
 
-            <!-- Page content -->
             <main class="flex-1 overflow-y-auto p-4">
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     <!-- Story Idea Form -->
@@ -90,7 +92,6 @@
                         <button id="generateStoryButton" type="button" onclick="generateStoryIdea()" disabled class="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Generate</button>
                     </div>
 
-                    <!-- Creative Text Form -->
                     <div class="bg-white p-6 rounded-lg shadow-md">
                         <form id="creativeTextForm">
                             <h2 class="text-xl font-semibold mb-4">Generate Creative Text</h2>
@@ -161,6 +162,8 @@
                 <div class="mt-8 bg-white p-6 rounded-lg shadow-md">
                     <h2 class="text-xl font-semibold mb-4">Generated Output</h2>
                     <div id="storyIdeaOutput" class="mb-4"></div>
+                    <div id="storySummaryOutput" class="mb-4"></div> <!-- New div for the summary -->
+
                     <div id="creativeTextOutput" class="mb-4"></div>
                     <div id="continuedStoryOutput" class="mb-4"></div>
                     <div id="modifiedResultOutput"></div>
@@ -188,6 +191,8 @@
 
             const data = await response.json();
             document.getElementById('storyIdeaOutput').innerHTML = `<h3 class="text-lg font-semibold mb-2">Story Idea:</h3><p>${data.idea}</p>`;
+            document.getElementById('storySummaryOutput').innerHTML = `<h3 class="text-lg font-semibold mb-2">Summary:</h3><p>${data.summary}</p>`;
+
             await updateConversationHistory();
         }
 
@@ -262,10 +267,10 @@
 
             const data = await response.json();
             const conversationList = document.getElementById('conversationList');
-            conversationList.innerHTML = ''; // Clear the list
+            conversationList.innerHTML = '';
             data.forEach(conversation => {
                 const listItem = document.createElement('li');
-                listItem.textContent = conversation.idea;
+                listItem.textContent = conversation.summary;
                 listItem.className = 'text-white bg-gray-700 p-2 rounded';
                 conversationList.appendChild(listItem);
             });
