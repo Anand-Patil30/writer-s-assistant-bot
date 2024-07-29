@@ -135,14 +135,15 @@ LOGIN_REDIRECT_URL = 'home'
 LOGOUT_REDIRECT_URL = 'login'
 
 # settings.py
+from .config import NAME,USER,PASSWORD,HOST,PORT
 
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'writer',
-        'USER': 'postgres',
-        'PASSWORD': 'admin',
-        'HOST': 'localhost',  
-        'PORT': '5432'
+        'NAME': NAME,
+        'USER': USER,
+        'PASSWORD': PASSWORD,
+        'HOST': HOST,  
+        'PORT': PORT
     }
 }
