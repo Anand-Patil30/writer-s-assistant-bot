@@ -2,8 +2,30 @@
 venv/
 env/
 .env/
+.env
 
 # Python-specific ignores
 *.py[cod]
 __pycache__/
 *.pyo
+
+
+# Ignore environment variables file
+.env
+
+# Ignore Python bytecode
+*.pyc
+__pycache__/
+
+# Ignore virtual environment directory
+venv/
+
+# Ignore Django migrations
+*/migrations/*
+
+# Ignore database files
+*.sqlite3
+
+# Ignore IDE specific files
+.vscode/
+.idea/
